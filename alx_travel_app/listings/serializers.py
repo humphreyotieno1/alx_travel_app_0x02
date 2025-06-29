@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import User, Property, Booking, Payment, Review, Message
+from .models import User, Property, Booking, Payment, Review
+from django.urls import reverse
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -51,18 +52,51 @@ class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = [
-            'id', 'property', 'property_id', 'user', 'start_date', 
-            'end_date', 'total_price', 'status', 'created_at'
+            'id', 'property', 'property_id', 'user', 'start_date', 'end_date',
+            'total_price', 'status', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'total_price']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'status']
 
 class PaymentSerializer(serializers.ModelSerializer):
     booking = BookingSerializer(read_only=True)
+    payment_url = serializers.SerializerMethodField(read_only=True)
     
     class Meta:
         model = Payment
-        fields = ['id', 'booking', 'amount', 'payment_method', 'payment_date']
-        read_only_fields = ['id', 'payment_date']
+        fields = [
+            'id', 'booking', 'amount', 'payment_date', 'payment_method',
+            'status', 'transaction_id', 'chapa_reference', 'currency',
+            'metadata', 'payment_url'
+        ]
+        read_only_fields = [
+            'id', 'payment_date', 'status', 'transaction_id',
+            'chapa_reference', 'metadata', 'payment_url'
+        ]
+    
+    def get_payment_url(self, obj):
+        if obj.status == 'pending' and obj.payment_method == 'chapa':
+            request = self.context.get('request')
+            if request is not None:
+                return request.build_absolute_uri(
+                    reverse('initiate-chapa-payment', kwargs={'pk': obj.id})
+                )
+        return None
+    
+    def validate_amount(self, value):
+        if value <= 0:
+            raise serializers.ValidationError('Amount must be greater than 0')
+        return value
+    
+    def create(self, validated_data):
+        booking = validated_data['booking']
+        if hasattr(booking, 'payment'):
+            raise serializers.ValidationError('A payment already exists for this booking')
+        
+        # Set the payment amount to the booking's total price if not provided
+        if 'amount' not in validated_data:
+            validated_data['amount'] = booking.total_price
+        
+        return super().create(validated_data)
 
 class ReviewSerializer(serializers.ModelSerializer):
     property = PropertySerializer(read_only=True)
@@ -70,14 +104,5 @@ class ReviewSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Review
-        fields = ['id', 'property', 'user', 'rating', 'comment', 'created_at']
-        read_only_fields = ['id', 'created_at']
-
-class MessageSerializer(serializers.ModelSerializer):
-    sender = UserSerializer(read_only=True)
-    recipient = UserSerializer(read_only=True)
-    
-    class Meta:
-        model = Message
-        fields = ['id', 'sender', 'recipient', 'message_body', 'sent_at']
-        read_only_fields = ['id', 'sent_at']
+        fields = ['id', 'property', 'user', 'rating', 'comment', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']

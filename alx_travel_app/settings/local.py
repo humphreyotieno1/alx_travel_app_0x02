@@ -1,6 +1,7 @@
 from .base import *
 import os
 import socket
+from datetime import timedelta
 
 # Debug settings
 DEBUG = env.bool('DEBUG', default=True)
@@ -9,19 +10,45 @@ DEBUG = env.bool('DEBUG', default=True)
 SECRET_KEY = env('SECRET_KEY')
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 
+# Disable debug toolbar
+INSTALLED_APPS = [app for app in INSTALLED_APPS if app != 'debug_toolbar']
+MIDDLEWARE = [m for m in MIDDLEWARE if m != 'debug_toolbar.middleware.DebugToolbarMiddleware']
+
+# JWT Settings
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+}
+
+# REST Framework settings for development
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
+}
+
 # Database settings
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': env('DB_NAME'),
-        'USER': env('DB_USER'),
-        'PASSWORD': env('DB_PASSWORD'),
-        'HOST': env('DB_HOST', default='localhost'),
-        'PORT': env('DB_PORT', default='3306'),
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 
@@ -36,37 +63,14 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Email settings (for development)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-# Debug toolbar (only in development)
-if DEBUG:
-    INSTALLED_APPS += ['debug_toolbar']
-    MIDDLEWARE = ['debug_toolbar.middleware.DebugToolbarMiddleware'] + MIDDLEWARE
-    
-    # Debug toolbar settings
-    DEBUG_TOOLBAR_CONFIG = {
-        'SHOW_TOOLBAR_CALLBACK': lambda request: True,  # Always show toolbar
-    }
-    
-    # Configure internal IPs for Docker and local development
-    hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
-    INTERNAL_IPS = [ip[: ip.rfind(".")] + ".1" for ip in ips] + ["127.0.0.1", "10.0.2.2"]
-    
-    # Configure static files for development
-    STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')] if os.path.exists(os.path.join(BASE_DIR, 'static')) else []
-    
-    # Log SQL queries in development
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'handlers': {
-            'console': {
-                'level': 'DEBUG',
-                'class': 'logging.StreamHandler',
-            },
-        },
-        'loggers': {
-            'django.db.backends': {
-                'level': 'DEBUG',
-                'handlers': ['console'],
-            },
-        },
-    }
+# Chapa Payment Settings
+CHAPA_SECRET_KEY = env('CHAPA_SECRET_KEY', default='')
+CHAPA_WEBHOOK_SECRET = env('CHAPA_WEBHOOK_SECRET', default='')
+CHAPA_BASE_URL = 'https://api.chapa.co/v1/'
+
+# CORS Settings (for development)
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+# CSRF Settings (for development)
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
