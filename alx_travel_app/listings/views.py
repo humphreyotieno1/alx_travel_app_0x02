@@ -1,8 +1,18 @@
 from rest_framework import viewsets, permissions, status, filters
 from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from rest_framework.reverse import reverse
+from rest_framework.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Property, Booking
 from .serializers import PropertySerializer, BookingSerializer
+
+@api_view(['GET'])
+def api_root(request, format=None):
+    return Response({
+        'properties': reverse('property-list', request=request, format=format),
+        'bookings': reverse('booking-list', request=request, format=format),
+    })
 
 class PropertyViewSet(viewsets.ModelViewSet):
     """

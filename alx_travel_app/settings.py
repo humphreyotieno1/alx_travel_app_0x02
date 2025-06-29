@@ -1,67 +1,25 @@
+"""
+Django settings for alx_travel_app project.
+
+This module imports the appropriate settings based on the environment.
+"""
+
 import os
-import environ as django_environ
 from pathlib import Path
 
-# Initialize environment variables
-env = django_environ.Env()
-django_environ.Env.read_env()
-
-# Build paths
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Security settings
-SECRET_KEY = env('SECRET_KEY')
-DEBUG = env('DEBUG', default=False)
+# Import base settings
+from .settings.base import *
 
-ALLOWED_HOSTS = ['*']
+# Import environment-specific settings
+if os.environ.get('DJANGO_ENV') == 'production':
+    from .settings.production import *
+else:
+    from .settings.local import *
 
-# Application definition
-INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'rest_framework.authtoken',
-    'corsheaders',
-    'drf_yasg',
-    'listings',
-]
-
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
-
-ROOT_URLCONF = 'alx_travel_app.urls'
-
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    },
-]
-
-WSGI_APPLICATION = 'alx_travel_app.wsgi.application'
-
-AUTH_USER_MODEL = 'listings.User'
+AUTH_USER_MODEL = 'alx_travel_app.listings.User'
 
 # Database
 DATABASES = {

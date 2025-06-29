@@ -23,10 +23,8 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('', views.api_root, name='api-root'),
-    path('properties/', views.PropertyList.as_view(), name='property-list'),
-    path('properties/<uuid:pk>/', views.PropertyDetail.as_view(), name='property-detail'),
-    path('users/', views.UserList.as_view(), name='user-list'),
-    path('users/<uuid:pk>/', views.UserDetail.as_view(), name='user-detail'),
-    path('bookings/', views.BookingList.as_view(), name='booking-list'),
-    path('bookings/<uuid:pk>/', views.BookingDetail.as_view(), name='booking-detail'),
+    path('api/', include(router.urls)),
+    path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 ]

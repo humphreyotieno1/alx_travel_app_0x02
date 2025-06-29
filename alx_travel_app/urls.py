@@ -16,6 +16,5 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('listings.urls')),  # Includes app-specific URLs
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('', include('alx_travel_app.listings.urls')),  # Include listings URLs at the root
 ]
